@@ -253,23 +253,28 @@ def main():
         take_screenshot(driver, "08-dashboard")
         time.sleep(3)
 
-        try:
-            element = driver.find_element("xpath", "//span[contains(text(),'Free Server #')]")
-            text = element.text.strip()
-            print("[INFO] 找到服务器文本: Free Server #***")
-            match = re.search(r'Free Server #(\d+)', text)
-            if match:
-                sid = match.group(1)
-                print("[INFO] ✅ 提取到服务器 ID: ***")
-        except Exception as e:
-            print(f"[ERROR] 页面元素定位失败: {e}")
+        page_html = driver.page_source
+        sid = None
+
+        # 方案1：从链接中提取 /service/<数字>/manage
+        matches = re.findall(r'/service/(\d+)/manage', page_html)
+        if matches:
+            sid = matches[0]
+            print(f"[INFO] ✅ 从链接获取到 Server ID: {sid}")
+
+        # 方案2（备用）：从文本中提取 #<数字>（如 "Free Server #218079"）
+        if not sid:
+            matches = re.findall(r'#(\d{4,})', page_html)
+            if matches:
+                sid = matches[0]
+                print(f"[INFO] ✅ 从文本 #号获取到 Server ID: {sid}")
 
         if not sid:
             take_screenshot(driver, "ERROR-no-server-id")
-            raise Exception("无法提取服务器 ID")
+            raise Exception("无法提取服务器 ID，页面可能已更新或未包含服务")
 
         manage_url = f"{BASE_URL}/service/{sid}/manage"
-        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/***/manage")
+        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/{sid}/manage")
         driver.get(manage_url)
         time.sleep(3)
         take_screenshot(driver, "09-manage-page")
