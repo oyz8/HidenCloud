@@ -3,8 +3,8 @@ name: HidenCloud 续期
 on:
   workflow_dispatch:
   schedule:
-    - cron: '13 3 4 5 *'   # 自动更新下次运行时间
-
+    - cron: '54 3 11 5 *'   # 自动更新下次运行时间
+    - cron: '30 2 * * 0'     # 🛡️ 每周保底：每周日 02:30 执行一次
 permissions:
   contents: write
   actions: write
@@ -49,7 +49,28 @@ jobs:
           if not url:
               print("[ERROR] PROXY_NODE 为空")
               sys.exit(1)
-
+          
+          print(f"[DEBUG] PROXY_NODE 长度: {len(url)}")
+          print(f"[DEBUG] PROXY_NODE 前50字符: {url[:50]}")
+          
+          # 检查是否是 base64 编码
+          if not any(url.startswith(p) for p in ["vless://", "vmess://", "trojan://", "ss://", "socks5://", "socks://"]):
+              print("[INFO] 检测到 base64 编码的链接，正在解码...")
+              try:
+                  decoded = base64.b64decode(url + "==").decode('utf-8')
+                  print(f"[DEBUG] 解码结果前80字符: {decoded[:80]}")
+                  url = decoded
+              except Exception as e:
+                  print(f"[WARN] Base64 解码失败: {e}")
+                  sys.exit(1)
+          
+          if url == "***" or url.startswith("***"):
+              print("[ERROR] GitHub Actions 未正确传递 secrets，请检查 PROXY_NODE 是否正确配置")
+              sys.exit(1)
+          
+          protocol = None
+          content = None
+          
           if url.startswith("vless://"):
               protocol = "vless"
               content = url[8:]
@@ -74,8 +95,12 @@ jobs:
                   f.write(url.split("#")[0])
               sys.exit(0)
           else:
-              print(f"[ERROR] 不支持的协议: {url.split('://')[0]}")
+              print(f"[ERROR] 不支持的协议或格式错误")
+              print(f"[DEBUG] URL 可能被截断或格式错误: {url[:80]}")
               sys.exit(1)
+          
+          print(f"[INFO] 检测到协议: {protocol}")
+          print(f"[DEBUG] Content 长度: {len(content)}")
 
           if "#" in content:
               content = content.rsplit("#", 1)[0]
@@ -358,16 +383,15 @@ jobs:
         run: |
           python3 main.py 2>&1 | tee renew.log
 
-     # 如需上传日志截图，可取消注释以下步骤
-     # - name: 上传日志和截图
-     #   if: always()
-     #   uses: actions/upload-artifact@v4
-     #   with:
-     #     name: hidencloud-logs
-     #     path: |
-     #       screenshots/*.png
-     #       renew.log
-     #     retention-days: 3
+      - name: 上传日志和截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hidencloud-logs-${{ github.run_number }}
+          path: |
+            screenshots/*.png
+            renew.log
+          retention-days: 3
 
       - name: 删除旧浏览器状态缓存
         if: always()
