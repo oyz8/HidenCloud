@@ -1,5 +1,6 @@
 # HidenCloud 自动续期
 
+# 没精力更新了，[到老王项目继续使用。](https://github.com/eooce/Auto-Renew-HidenCloud) 
 
 > ⭐ 觉得有用？给个 Star 支持一下！  
 > 官网：[https://hidencloud.com](https://hidencloud.com) ｜ 控制台：[https://dash.hidencloud.com](https://dash.hidencloud.com) ｜ 实时库存监控频道 [oyz8_bot](https://t.me/oyz8_bot)
